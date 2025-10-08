@@ -97,7 +97,7 @@ class GitParser:
         """Parse per-file diffs into structured data."""
         diffs: list[dict[str, Any]] = []
         parent = commit.parents[0] if commit.parents else None
-        for diff in commit.diff(parent, create_patch=True):
+        for diff in parent.diff(commit, create_patch=True) if parent else []:
             file_path = diff.b_path or diff.a_path
             if not file_path:
                 continue
