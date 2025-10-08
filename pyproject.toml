@@ -19,7 +19,7 @@ dependencies = [
 
 # CLI entrypoint definition
 [project.scripts]
-gitgossip = "gitgossip.cli:main"
+gitgossip = "gitgossip.cli:app"
 
 # Required by PyPI and uv to treat as installable package
 [build-system]

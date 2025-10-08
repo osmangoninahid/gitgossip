@@ -13,49 +13,33 @@ from rich.console import Console
 from gitgossip.core.git_parser import GitParser
 from gitgossip.core.models.commit import Commit
 
-app = typer.Typer(no_args_is_help=True)
 console = Console()
 
 
-@app.command("run", hidden=True)
-def summarize_run() -> None:
-    """(internal fallback)."""
-    typer.echo("Use: gitgossip summarize <repo_path>")
-
-
-@app.callback(invoke_without_command=True)
-def summarize_command(
-    path: str = typer.Argument(
-        ".",
-        help="Path to the Git repository (default: current directory)",
-    ),
-    author: str | None = typer.Option(None, "--author", "-a", help="Filter by author name or email"),
-    since: str | None = typer.Option(None, "--since", "-s", help="Filter commits since (e.g. '7days' or '2025-10-01')"),
-    json_output: bool = typer.Option(False, "--json", help="Output commits as JSON instead of text"),
+def summarize_cmd(
+    path: str,
+    author: str | None = None,
+    since: str | None = None,
+    json_output: bool = False,
 ) -> None:
-    """Summarize recent commits for a repository."""
+    """Summarize recent commits for a repository or multiple repositories."""
     repo_path = Path(path).expanduser().resolve()
 
-    try:
-        parser = GitParser(str(repo_path))
-        commits = parser.get_commits(author=author, since=since)
-    except (InvalidGitRepositoryError, NoSuchPathError) as e:
-        console.print(f"[red]Invalid repository: {e}[/red]")
-        raise typer.Exit(code=1)
-    except OSError as e:
-        console.print(f"[red]Filesystem error: {e}[/red]")
-        raise typer.Exit(code=1)
-
-    if not commits:
-        console.print("[yellow]No commits found for the given filters.[/yellow]")
-        raise typer.Exit()
-
-    if json_output:
-        console.print_json(json.dumps([c.model_dump(mode="json") for c in commits], indent=2))
+    # Case 1: If this path *is* a git repo, handle directly
+    if (repo_path / ".git").exists():
+        _summarize_single_repo(repo_path, author, since, json_output)
         return
 
-    console.rule(f"[bold blue]Summary for {repo_path.name}[/bold blue]")
-    _print_commit_list(commits)
+    # Case 2: Otherwise, check for nested repositories
+    repos = _find_git_repos(repo_path, recursive=False)
+    if not repos:
+        console.print(f"[red]No git repositories found in {repo_path}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[bold blue]Found {len(repos)} repositories under {repo_path}[/bold blue]\n")
+    for repo in repos:
+        console.rule(f"[bold cyan]{repo.name}[/bold cyan]")
+        _summarize_single_repo(repo, author, since, json_output)
 
 
 def _print_commit_list(commits: list[Commit]) -> None:
@@ -85,6 +69,9 @@ def _summarize_single_repo(repo_path: Path, author: str | None, since: str | Non
     """Summarize commits for a single repository."""
     try:
         parser = GitParser(str(repo_path))
+        if not parser.has_commits:
+            console.print(f"[yellow]Skipping {repo_path.name}: no commits yet.[/yellow]\n")
+            return
         commits = parser.get_commits(author=author, since=since)
     except (InvalidGitRepositoryError, NoSuchPathError) as e:
         console.print(f"[red]Invalid repository at {repo_path}: {e}[/red]")
