@@ -12,6 +12,7 @@ authors = [
 # Core runtime dependencies
 dependencies = [
     "gitpython>=3.1.45",
+    "pydantic==2.8.0",
     "rich>=14.1.0",
     "typer>=0.9.0",
 ]
@@ -29,4 +30,12 @@ build-backend = "hatchling.build"
 [tool.uv]
 package = true
 dev-dependencies = ["pytest", "black", "isort"]
+
+[tool.ruff]
+select = ["E", "F", "I", "D"]
+ignore = ["D203", "D213"]
+line-length = 100
+
+[tool.ruff.pydocstyle]
+convention = "google"
 
