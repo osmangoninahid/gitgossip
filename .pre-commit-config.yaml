@@ -1,0 +1,32 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+
+      - id: black
+        name: black
+        entry: uv run black
+        language: system
+        types_or: [python]
+
+      - id: isort
+        name: isort
+        entry: uv run isort
+        language: system
+        types_or: [python]
+
+      - id: pylint
+        name: pylint
+        entry: uv run pylint
+        language: system
+        types_or: [python]
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types_or: [python]

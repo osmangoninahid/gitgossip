@@ -19,7 +19,7 @@ dependencies = [
 
 # CLI entrypoint definition
 [project.scripts]
-gitgossip = "gitgossip.cli:app"
+gitgossip = "gitgossip.cli:main"
 
 # Required by PyPI and uv to treat as installable package
 [build-system]
@@ -29,13 +29,31 @@ build-backend = "hatchling.build"
 # uv-specific configuration
 [tool.uv]
 package = true
-dev-dependencies = ["pytest", "black", "isort"]
+dev-dependencies = [
+    "pytest",
+    "black",
+    "isort",
+    "pylint>=3.3.9",
+    "mypy>=1.18.2",
+    "ruff>=0.14.0",
+    "pre-commit>=4.3.0",
+]
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+line_length = 120
 
 [tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "D"]
 ignore = ["D203", "D213"]
-line-length = 100
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
+
 
