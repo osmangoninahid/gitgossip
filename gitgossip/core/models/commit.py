@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,7 @@ class Commit(BaseModel):
     insertions: int = Field(0, description="The number of insertions")
     deletions: int = Field(0, description="The number of deletions")
     files_changed: int = Field(0, description="Number of files modified")
+    changes: List[Dict[str, Any]] = Field(default_factory=list)
 
     model_config = {
         "frozen": True,

@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional
 
+from git import Commit as GitCommit
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
 
 from gitgossip.core.models.commit import Commit
+
+FUNC_PATTERN = re.compile(r"^\s*(?:def|class|function)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 
 
 class GitParser:
@@ -69,6 +73,7 @@ class GitParser:
         commits: list[Commit] = []
         for commit in self.repo.iter_commits(max_count=limit, **kwargs):
             stats = commit.stats.total
+            structured_changes = self._extract_diffs(commit)
             commits.append(
                 Commit(
                     hash=commit.hexsha,
@@ -81,9 +86,74 @@ class GitParser:
                     insertions=stats.get("insertions", 0),
                     deletions=stats.get("deletions", 0),
                     files_changed=stats.get("files", 0),
+                    changes=structured_changes,
                 )
             )
         return commits
+
+    def _extract_diffs(self, commit: GitCommit) -> list[dict[str, Any]]:
+        """Parse per-file diffs into structured data."""
+        diffs: list[dict[str, Any]] = []
+        for diff in commit.diff(commit.parents[0] if commit.parents else None, create_patch=True):
+            if diff.b_path is None or diff.new_file or diff.deleted_file or diff.renamed_file:
+                continue
+
+            try:
+                diff_text = self._get_diff_text(diff)
+                file_summary = self._summarize_diff(diff.b_path, diff_text)
+                diffs.append(file_summary)
+            except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
+                diffs.append({"file": diff.b_path or "unknown", "error": f"Failed to parse diff: {e}"})
+        return diffs
+
+    def _summarize_diff(self, file_path: str, diff_text: str) -> dict[str, Any]:
+        """Build file-level structured summary including language, hunks, and changed functions."""
+        language = self._detect_language(file_path)
+        hunks = self._parse_hunks(diff_text)
+        changed_functions = list({m.group(1) for m in FUNC_PATTERN.finditer(diff_text) if m and m.group(1)})
+        summary = self._summarize_hunks(hunks, file_path)
+        return {
+            "file": file_path,
+            "language": language,
+            "changed_functions": changed_functions,
+            "hunks": hunks,
+            "summary": summary,
+        }
+
+    @staticmethod
+    def _parse_hunks(diff_text: str) -> list[dict[str, Any]]:
+        """Extract structured hunks (added/removed/context lines) from unified diff text."""
+        hunks: list[dict[str, Any]] = []
+        current_hunk: dict[str, Any] | None = None
+
+        for line in diff_text.splitlines():
+            if line.startswith("@@"):
+                match = re.match(r"@@ -(\d+),?\d* \+(\d+),?\d* @@", line)
+                if match:
+                    if current_hunk:
+                        hunks.append(current_hunk)
+                    current_hunk = {
+                        "old_start": int(match.group(1)),
+                        "new_start": int(match.group(2)),
+                        "added": [],
+                        "removed": [],
+                        "context": [],
+                    }
+                continue
+
+            if not current_hunk:
+                continue
+
+            if line.startswith("+") and not line.startswith("+++"):
+                current_hunk["added"].append(line[1:])
+            elif line.startswith("-") and not line.startswith("---"):
+                current_hunk["removed"].append(line[1:])
+            else:
+                current_hunk["context"].append(line)
+
+        if current_hunk:
+            hunks.append(current_hunk)
+        return hunks
 
     @staticmethod
     def _parse_since(since: str) -> str:
@@ -100,3 +170,45 @@ class GitParser:
             return dt.isoformat()
         except ValueError:
             raise ValueError(f"{since} is not a valid ISO date")
+
+    @staticmethod
+    def _detect_language(path: str) -> str:
+        """Infer language from file extension."""
+        ext = os.path.splitext(path)[1].lower()
+        return {
+            ".py": "python",
+            ".go": "go",
+            ".js": "javascript",
+            ".ts": "typescript",
+            ".java": "java",
+            ".sh": "bash",
+            ".yaml": "yaml",
+            ".yml": "yaml",
+        }.get(ext, "unknown")
+
+    @staticmethod
+    def _summarize_hunks(hunks: list[dict[str, Any]], file_path: str) -> list[str]:
+        """Summarize each hunk by describing what changed and roughly where."""
+        summaries: list[str] = []
+        for h in hunks:
+            added = len(h["added"])
+            removed = len(h["removed"])
+            start = h["new_start"]
+            if added and not removed:
+                summaries.append(f"Added {added} new lines in {file_path} around line {start}.")
+            elif removed and not added:
+                summaries.append(f"Removed {removed} lines from {file_path} around line {start}.")
+            elif added and removed:
+                summaries.append(
+                    f"Modified {added + removed} lines in {file_path} "
+                    f"({removed} removed, {added} added near line {start})."
+                )
+        return summaries
+
+    @staticmethod
+    def _get_diff_text(diff: Any) -> str:
+        """Safely decode diff data to text."""
+        diff_data = getattr(diff, "diff", "")
+        if isinstance(diff_data, bytes):
+            return diff_data.decode("utf-8", "ignore")
+        return diff_data or ""

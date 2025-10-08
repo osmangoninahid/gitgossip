@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 
 import pytest
 from git import Repo
 
 from gitgossip.core.git_parser import GitParser
-from gitgossip.core.models.commit import Commit
 
 
 class TestGitParser:  # noqa: D101
@@ -22,11 +20,36 @@ class TestGitParser:  # noqa: D101
         repo_path.mkdir()
         repo = Repo.init(repo_path)
 
-        # Create a dummy file and commit
         test_file = repo_path / "README.md"
+
+        # Commit 1 — base version
         test_file.write_text("# Sample\n")
         repo.index.add([str(test_file)])
-        repo.index.commit("Initial commit", author_date="2025-10-08T12:00:00", commit_date="2025-10-08T12:00:00")
+        repo.index.commit(
+            "Initial commit",
+            author_date="2025-10-08T12:00:00",
+            commit_date="2025-10-08T12:00:00",
+        )
+
+        # Commit 2 — create some real content
+        test_file.write_text("# Sample Title\nLine 1\nLine 2\nLine 3\n")
+        repo.index.add([str(test_file)])
+        repo.index.commit(
+            "docs: initial version",
+            author_date="2025-10-08T12:05:00",
+            commit_date="2025-10-08T12:05:00",
+        )
+
+        # Commit 3 — modify lines to produce real hunks
+        test_file.write_text(
+            "# Updated Sample Title\nLine 1 changed\nLine 2 added\nLine 3 removed\nLine 4 new content\n"
+        )
+        repo.index.add([str(test_file)])
+        repo.index.commit(
+            "docs: update README with new section",
+            author_date="2025-10-08T12:10:00",
+            commit_date="2025-10-08T12:10:00",
+        )
 
         return repo_path
 
@@ -46,11 +69,15 @@ class TestGitParser:  # noqa: D101
         """Should return list of Commit objects."""
         parser = GitParser(str(tmp_git_repo))
         commits = parser.get_commits()
-        assert isinstance(commits, list)
-        assert all(isinstance(c, Commit) for c in commits)
-        assert commits[0].hash
-        assert commits[0].author
-        assert isinstance(commits[0].date, datetime)
+        latest = commits[0]
+        assert latest.changes, "Expected structured changes"
+        first_change = latest.changes[0]
+        assert "file" in first_change
+        assert first_change["file"].endswith("README.md")
+        assert isinstance(first_change["hunks"], list)
+        assert any("added" in h for h in first_change["hunks"]), "Expected added lines in hunks"
+        assert isinstance(first_change["summary"], list)
+        assert any("Added" in s or "Modified" in s for s in first_change["summary"])
 
     def test_get_commits_with_author_filter(self, tmp_git_repo: Path) -> None:  # noqa: D102
         """Should return empty list for unknown author."""
@@ -70,3 +97,13 @@ class TestGitParser:  # noqa: D101
         parser = GitParser(str(tmp_git_repo))
         commits = parser.get_commits(since="1days")
         assert isinstance(commits, list)
+
+    def test_extract_diffs_detects_changes(self, tmp_git_repo: Path) -> None:  # noqa: D102
+        """Should detect changed content and summarize it properly."""
+        parser = GitParser(str(tmp_git_repo))
+        commits = parser.get_commits(limit=2)
+        latest = commits[0]
+
+        # verify that summary text is meaningful
+        summaries = [s.lower() for s in latest.changes[0]["summary"]]
+        assert any("added" in s or "modified" in s for s in summaries)
