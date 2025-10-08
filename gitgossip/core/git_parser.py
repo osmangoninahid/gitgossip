@@ -5,11 +5,13 @@ from __future__ import annotations
 import os
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Optional
 
 from git import Commit as GitCommit
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
 
+from gitgossip.core.constants import IGNORED_DIFF_FILES, IGNORED_EXTENSIONS, MAX_DIFF_SIZE
 from gitgossip.core.models.commit import Commit
 
 FUNC_PATTERN = re.compile(r"^\s*(?:def|class|function)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
@@ -94,16 +96,28 @@ class GitParser:
     def _extract_diffs(self, commit: GitCommit) -> list[dict[str, Any]]:
         """Parse per-file diffs into structured data."""
         diffs: list[dict[str, Any]] = []
-        for diff in commit.diff(commit.parents[0] if commit.parents else None, create_patch=True):
-            if diff.b_path is None or diff.new_file or diff.deleted_file or diff.renamed_file:
+        parent = commit.parents[0] if commit.parents else None
+        for diff in commit.diff(parent, create_patch=True):
+            file_path = diff.b_path or diff.a_path
+            if not file_path:
+                continue
+            path_obj = Path(file_path)
+            if path_obj.name in IGNORED_DIFF_FILES or path_obj.suffix in IGNORED_EXTENSIONS:
+                continue
+            if diff.new_file or diff.deleted_file or diff.renamed_file:
                 continue
 
             try:
                 diff_text = self._get_diff_text(diff)
-                file_summary = self._summarize_diff(diff.b_path, diff_text)
+                if not diff_text:
+                    continue
+                if len(diff_text) > MAX_DIFF_SIZE:
+                    diffs.append({"file": file_path, "warning": "Diff too large, skipped"})
+                    continue
+                file_summary = self._summarize_diff(file_path, diff_text)
                 diffs.append(file_summary)
             except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
-                diffs.append({"file": diff.b_path or "unknown", "error": f"Failed to parse diff: {e}"})
+                diffs.append({"file": file_path or "unknown", "error": f"Failed to parse diff: {e}"})
         return diffs
 
     def _summarize_diff(self, file_path: str, diff_text: str) -> dict[str, Any]:
@@ -207,8 +221,13 @@ class GitParser:
 
     @staticmethod
     def _get_diff_text(diff: Any) -> str:
-        """Safely decode diff data to text."""
+        """Safely decode diff data to text, with size guard."""
         diff_data = getattr(diff, "diff", "")
+        if not diff_data:
+            return ""
         if isinstance(diff_data, bytes):
+            if len(diff_data) > MAX_DIFF_SIZE:
+                return ""
             return diff_data.decode("utf-8", "ignore")
-        return diff_data or ""
+        diff_str = str(diff_data)
+        return diff_str if len(diff_str) <= MAX_DIFF_SIZE else ""
