@@ -1,0 +1,32 @@
+[project]
+name = "gitgossip"
+version = "0.1.0"
+description = "AI that spills the tea on your commits — human-readable Git summaries."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [
+    { name = "Osman Goni Nahid" }
+]
+
+# Core runtime dependencies
+dependencies = [
+    "gitpython>=3.1.45",
+    "rich>=14.1.0",
+    "typer>=0.9.0",
+]
+
+# CLI entrypoint definition
+[project.scripts]
+gitgossip = "gitgossip.cli:app"
+
+# Required by PyPI and uv to treat as installable package
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# uv-specific configuration
+[tool.uv]
+package = true
+dev-dependencies = ["pytest", "black", "isort"]
+
