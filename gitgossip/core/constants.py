@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 # Files that add no semantic value to commit summaries
 IGNORED_DIFF_FILES: set[str] = {
     "uv.lock",
@@ -36,3 +38,21 @@ DEFAULT_CONFIG = {
     "ignore_extensions": list(IGNORED_EXTENSIONS),
     "max_diff_size": MAX_DIFF_SIZE,
 }
+
+# Function / class detection patterns by language
+LANG_FUNC_PATTERNS = {
+    "python": re.compile(r"^\s*(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE),
+    "go": re.compile(r"^\s*func\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE),
+    "rust": re.compile(r"^\s*fn\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE),
+    "javascript": re.compile(r"^\s*function\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE),
+    "typescript": re.compile(r"^\s*function\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE),
+    "java": re.compile(
+        r"^\s*(?:public\s+|private\s+|protected\s+)?(?:static\s+)?[A-Za-z_<>]+\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(",
+        re.MULTILINE,
+    ),
+}
+
+DEFAULT_FUNC_PATTERN = re.compile(
+    r"^\s*(?:def|func|fn|function|class)\s+([A-Za-z_][A-Za-z0-9_]*)",
+    re.MULTILINE,
+)

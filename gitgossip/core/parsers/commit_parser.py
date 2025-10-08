@@ -9,40 +9,28 @@ from pathlib import Path
 from typing import Any, Optional
 
 from git import Commit as GitCommit
-from git import InvalidGitRepositoryError, NoSuchPathError, Repo
+from git import Repo
 
-from gitgossip.core.constants import IGNORED_DIFF_FILES, IGNORED_EXTENSIONS, MAX_DIFF_SIZE
+from gitgossip.core.constants import (
+    DEFAULT_FUNC_PATTERN,
+    IGNORED_DIFF_FILES,
+    IGNORED_EXTENSIONS,
+    LANG_FUNC_PATTERNS,
+    MAX_DIFF_SIZE,
+)
+from gitgossip.core.interfaces.commit_parser import ICommitParser
+from gitgossip.core.interfaces.repo_provider import IRepoProvider
 from gitgossip.core.models.commit import Commit
 
-FUNC_PATTERN = re.compile(r"^\s*(?:def|class|function)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 
-
-class GitParser:
+class CommitParser(ICommitParser):
     """Parses commits from a Git repository with optional filters (author, since, limit)."""
 
-    def __init__(self, repo_path: str = ".") -> None:
-        """Initialize a GitParser instance.
-
-        Args:
-            repo_path: Path to the git repository.
-
-        Returns:
-            Instance of GitParser instance.
-
-        """
-        if not os.path.exists(repo_path):
-            raise FileNotFoundError(f"{repo_path} does not exist")
-
-        try:
-            self.repo = Repo(repo_path)
-        except (InvalidGitRepositoryError, NoSuchPathError):
-            raise FileNotFoundError(f"{repo_path} does not exist")
-
-        head = self.repo.head
-        if head.is_detached or not head.is_valid():
-            self.has_commits = False
-        else:
-            self.has_commits = True
+    def __init__(self, repo_provider: IRepoProvider) -> None:
+        """Initialize a CommitParser with a repo provider."""
+        self.repo_provider = repo_provider
+        self.repo: Repo = repo_provider.get_repo()
+        self.has_commits = bool(self.repo.head.is_valid()) and not self.repo.head.is_detached
 
     def get_commits(
         self,
@@ -74,24 +62,25 @@ class GitParser:
 
         commits: list[Commit] = []
         for commit in self.repo.iter_commits(max_count=limit, **kwargs):
-            stats = commit.stats.total
-            structured_changes = self._extract_diffs(commit)
-            commits.append(
-                Commit(
-                    hash=commit.hexsha,
-                    author=commit.author.name or "Unknown",
-                    email=commit.author.email or "unknown@example.com",
-                    date=commit.committed_datetime,
-                    message=(
-                        commit.summary if isinstance(commit.summary, str) else commit.summary.decode("utf-8", "ignore")
-                    ),
-                    insertions=stats.get("insertions", 0),
-                    deletions=stats.get("deletions", 0),
-                    files_changed=stats.get("files", 0),
-                    changes=structured_changes,
-                )
-            )
+            commits.append(self._parse_commit(commit))
         return commits
+
+    def _parse_commit(self, commit: GitCommit) -> Commit:
+        """Convert a GitPython Commit object into our Commit domain model."""
+        stats = commit.stats.total
+        structured_changes = self._extract_diffs(commit)
+
+        return Commit(
+            hash=commit.hexsha,
+            author=commit.author.name or "Unknown",
+            email=commit.author.email or "unknown@example.com",
+            date=commit.committed_datetime,
+            message=(commit.summary if isinstance(commit.summary, str) else commit.summary.decode("utf-8", "ignore")),
+            insertions=stats.get("insertions", 0),
+            deletions=stats.get("deletions", 0),
+            files_changed=stats.get("files", 0),
+            changes=structured_changes,
+        )
 
     def _extract_diffs(self, commit: GitCommit) -> list[dict[str, Any]]:
         """Parse per-file diffs into structured data."""
@@ -124,7 +113,8 @@ class GitParser:
         """Build file-level structured summary including language, hunks, and changed functions."""
         language = self._detect_language(file_path)
         hunks = self._parse_hunks(diff_text)
-        changed_functions = list({m.group(1) for m in FUNC_PATTERN.finditer(diff_text) if m and m.group(1)})
+        pattern = LANG_FUNC_PATTERNS.get(language, DEFAULT_FUNC_PATTERN)
+        changed_functions = list({m.group(1) for m in pattern.finditer(diff_text) if m and m.group(1)})
         summary = self._summarize_hunks(hunks, file_path)
         return {
             "file": file_path,
