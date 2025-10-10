@@ -28,9 +28,14 @@ class CommitParser(ICommitParser):
 
     def __init__(self, repo_provider: IRepoProvider) -> None:
         """Initialize a CommitParser with a repo provider."""
-        self.repo_provider = repo_provider
-        self.repo: Repo = repo_provider.get_repo()
-        self.has_commits = bool(self.repo.head.is_valid()) and not self.repo.head.is_detached
+        self.__repo_provider = repo_provider
+        self.__repo: Repo = repo_provider.get_repo()
+        self.has_commits = bool(self.__repo.head.is_valid()) and not self.__repo.head.is_detached
+
+    @property
+    def repo_provider(self) -> IRepoProvider:
+        """Expose the repository provider used by this parser."""
+        return self.__repo_provider
 
     def get_commits(
         self,
@@ -61,7 +66,7 @@ class CommitParser(ICommitParser):
             kwargs["since"] = self._parse_since(since)
 
         commits: list[Commit] = []
-        for commit in self.repo.iter_commits(max_count=limit, **kwargs):
+        for commit in self.__repo.iter_commits(max_count=limit, **kwargs):
             commits.append(self._parse_commit(commit))
         return commits
 

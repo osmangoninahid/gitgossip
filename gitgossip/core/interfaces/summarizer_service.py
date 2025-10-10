@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Optional
-
-from gitgossip.core.models.commit import Commit
 
 
 class ISummarizerService(ABC):
@@ -16,10 +13,10 @@ class ISummarizerService(ABC):
     def summarize_repository(
         self,
         repo_path: Path,
-        author: Optional[str] = None,
-        since: Optional[str] = None,
+        author: str | None = None,
+        since: str | None = None,
         limit: int = 100,
-    ) -> List[Commit]:
+    ) -> str:
         """Summarize commits for a single repository.
 
         Args:
@@ -29,27 +26,18 @@ class ISummarizerService(ABC):
             limit: Maximum number of commits to return.
 
         Returns:
-            List of Commit models representing summarized commits.
+            summarized commits.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def summarize_directory(
-        self,
-        base_dir: Path,
-        author: Optional[str] = None,
-        since: Optional[str] = None,
-        limit: int = 100,
-    ) -> dict[str, List[Commit]]:
-        """Summarize commits across multiple Git repositories in a directory.
+    def summarize_for_merge_request(self, target_branch: str) -> tuple[str, str]:
+        """Summarize commits for a single repository.
 
         Args:
-            base_dir: Base directory to search for Git repositories.
-            author: Optional author filter.
-            since: Optional time filter.
-            limit: Maximum number of commits to include per repository.
+            target_branch: Target branch to summarize.
 
         Returns:
-            Dictionary mapping repository name to commit summaries.
+            merge request title and description.
         """
         raise NotImplementedError

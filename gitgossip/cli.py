@@ -8,6 +8,7 @@ import typer
 from rich.console import Console
 
 from gitgossip.commands.summarize import summarize_cmd
+from gitgossip.commands.summarize_mr import summarize_mr_cmd
 
 console = Console()
 app = typer.Typer(help="GitGossip 🧠 — Human-friendly Git summaries and digests for developers.")
@@ -21,10 +22,21 @@ def summarize(
     ),
     author: str | None = typer.Option(None, "--author", "-a", help="Filter by author name or email"),
     since: str | None = typer.Option(None, "--since", "-s", help="Filter commits since (e.g. '7days' or '2025-10-01')"),
-    json_output: bool = typer.Option(False, "--json", help="Output commits as JSON instead of text"),
+    use_mock: bool = typer.Option(False, "--use-mock", help="Use mock llm analyzer instead of real llm analyzer"),
 ) -> None:
     """Summarize command."""
-    summarize_cmd(path=path, author=author, since=since, json_output=json_output)
+    summarize_cmd(path=path, author=author, since=since, use_mock=use_mock)
+
+
+@app.command(help="Generate Merge Request title & description", rich_help_panel="Available")
+def summarize_mr(
+    target_branch: str = typer.Argument(..., help="Branch to compare against (e.g., main or develop)"),
+    path: str = typer.Option(".", "--path", help="Path to the Git repository"),
+    pull: bool = typer.Option(False, "--pull", help="Pull latest target branch before diffing"),
+    use_mock: bool = typer.Option(False, "--use-mock", help="Use mock llm analyzer instead of real llm analyzer"),
+) -> None:
+    """Summarize Merge Request command."""
+    summarize_mr_cmd(target_branch=target_branch, path=path, pull=pull, use_mock=use_mock)
 
 
 @app.command(rich_help_panel="Coming soon", options_metavar="Coming soon...")

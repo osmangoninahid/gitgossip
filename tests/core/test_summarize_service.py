@@ -11,9 +11,10 @@ class TestSummarizerService:
     """Verify summarizer correctly delegates to parser."""
 
     def test_summarize_repository_delegates_to_commit_parser(self) -> None:
-        """Should call CommitParser.get_commits with correct params."""
+        """Should call CommitParser.get_commits and pass result to LLM analyzer."""
         # given
         mock_commit_parser = MagicMock()
+        mock_llm_analyzer = MagicMock()
         mock_commit = Commit(
             hash="abc123",
             author="Test Author",
@@ -26,11 +27,14 @@ class TestSummarizerService:
             changes=[],
         )
         mock_commit_parser.get_commits.return_value = [mock_commit]
-        service = SummarizerService(commit_parser=mock_commit_parser)
+        mock_llm_analyzer.analyze_commits.return_value = "mock-summary"
+
+        service = SummarizerService(commit_parser=mock_commit_parser, llm_analyzer=mock_llm_analyzer)
 
         # when
         result = service.summarize_repository(author="me", since="1days", limit=5)
 
         # then
-        assert result == [mock_commit]
         mock_commit_parser.get_commits.assert_called_once_with(author="me", since="1days", limit=5)
+        mock_llm_analyzer.analyze_commits.assert_called_once_with([mock_commit])
+        assert result == "mock-summary"

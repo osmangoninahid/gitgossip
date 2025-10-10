@@ -35,3 +35,16 @@ class GitRepoProvider(IRepoProvider):
             return Repo(repo_path)
         except (InvalidGitRepositoryError, NoSuchPathError) as exc:
             raise FileNotFoundError(f"Invalid or inaccessible repository: {self.__path}") from exc
+
+    def get_diff_between_branches(self, target_branch: str) -> str:
+        """Return the textual diff between the current HEAD and the target branch."""
+        repo = self.get_repo()
+
+        if target_branch not in repo.refs:
+            raise ValueError(f"Target branch '{target_branch}' not found in repository.")
+
+        try:
+            diff_text = str(repo.git.diff(f"{target_branch}...HEAD", unified=3))
+            return diff_text.strip()
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate diff for branch comparison: {e}") from e

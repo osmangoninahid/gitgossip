@@ -21,3 +21,9 @@ class IRepoProvider(ABC):
         Raises:
             FileNotFoundError: If the path does not exist or is invalid.
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_diff_between_branches(self, target_branch: str) -> str:
+        """Return textual diff between the current HEAD and the target branch."""
+        raise NotImplementedError

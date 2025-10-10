@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from gitgossip.core.interfaces.repo_provider import IRepoProvider
 from gitgossip.core.models.commit import Commit
 
 
@@ -15,6 +16,12 @@ class ICommitParser(ABC):
     into a structured `Commit` domain model containing metadata and
     extracted change details.
     """
+
+    @property
+    @abstractmethod
+    def repo_provider(self) -> IRepoProvider:
+        """Repository provider."""
+        raise NotImplementedError
 
     @abstractmethod
     def get_commits(
