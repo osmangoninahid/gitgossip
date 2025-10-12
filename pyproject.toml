@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "AI that spills the tea on your commits — human-readable Git summaries."
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 authors = [
     { name = "Osman Goni Nahid" }
 ]
@@ -33,6 +33,17 @@ build-backend = "hatchling.build"
 [tool.uv]
 package = true
 dev-dependencies = [
+    "pytest",
+    "black",
+    "isort",
+    "pylint>=3.3.9",
+    "mypy>=1.18.2",
+    "ruff>=0.14.0",
+    "pre-commit>=4.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
     "pytest",
     "black",
     "isort",

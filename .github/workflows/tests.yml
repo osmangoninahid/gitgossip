@@ -1,0 +1,49 @@
+name: 🧪 Run Tests and Lint Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies (using uv if available)
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv || true
+          if command -v uv &> /dev/null; then
+            uv pip install -e ".[dev]"
+          else
+            pip install -e ".[dev]"
+          fi
+
+      - name: Run Ruff linter
+        run: ruff check .
+
+      - name: Run type checker (mypy)
+        run: mypy gitgossip
+
+      - name: Run unit tests (pytest)
+        run: pytest -v --maxfail=1 --disable-warnings
+
+      - name: Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-coverage
+          path: .pytest_cache
