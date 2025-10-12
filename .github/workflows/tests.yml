@@ -29,13 +29,13 @@ jobs:
           uv pip install -e ".[dev]"
 
       - name: Run Ruff linter
-        run: ruff check .
+        run: uv run ruff check .
 
       - name: Run type checker (mypy)
-        run: mypy gitgossip
+        run: uv run mypy gitgossip
 
       - name: Run unit tests (pytest)
-        run: pytest -v --maxfail=1 --disable-warnings
+        run: uv run pytest -v --maxfail=1 --disable-warnings
 
       - name: Upload coverage report
         if: success()
