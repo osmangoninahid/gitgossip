@@ -34,12 +34,14 @@ jobs:
       - name: Run type checker (mypy)
         run: uv run mypy gitgossip
 
-      - name: Run unit tests (pytest)
-        run: uv run pytest -v --maxfail=1 --disable-warnings
+      - name: Run unit tests
+        run: |
+            uv run pytest -v --maxfail=1 --disable-warnings \
+            --cov=gitgossip --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage report
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-coverage
-          path: .pytest_cache
+          name: coverage-report
+          path: coverage.xml
+          if-no-files-found: error
