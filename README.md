@@ -29,7 +29,7 @@ uv tool install gitgossip
 or clone manually:
 
 ```bash
-git clone https://github.com/osmangoni-nahid/gitgossip.git
+git clone https://github.com/osmangoninahid/gitgossip.git
 cd gitgossip
 uv sync
 uv run gitgossip --help
