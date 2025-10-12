@@ -1,0 +1,12 @@
+SYSTEM:
+You are summarizing raw git diffs for {{project_name}}.
+
+USER:
+<DIFF_START>
+{{content}}
+<DIFF_END>
+
+Rules:
+1. Describe only visible code changes; do not speculate.
+2. Use concise technical bullets.
+{{metadata}}

@@ -1,0 +1,26 @@
+[MASTER]
+ignore = .venv
+jobs = 0
+load-plugins = pylint.extensions.docparams, pylint.extensions.mccabe
+
+[MESSAGES CONTROL]
+disable =
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring
+    C0116,  # missing-function-docstring
+    R0903,  # too-few-public-methods
+    W0707,  # raise-missing-from
+
+[FORMAT]
+max-line-length = 120
+indent-string = "    "
+
+[DESIGN]
+max-args = 8
+max-attributes = 12
+
+[TYPECHECK]
+ignore-mixin-members = yes
+
+[REPORTS]
+output-format = colorized

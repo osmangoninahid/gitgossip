@@ -11,3 +11,9 @@ wheels/
 
 # Jetbrains IDE
 .idea
+
+# macos
+.DS_Store
+
+# envs 
+*.env

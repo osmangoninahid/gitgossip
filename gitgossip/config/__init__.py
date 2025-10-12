@@ -1,0 +1,1 @@
+"""GitGossip Configuration module."""

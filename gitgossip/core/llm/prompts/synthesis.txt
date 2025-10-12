@@ -1,0 +1,10 @@
+SYSTEM:
+You merge multiple partial summaries into one coherent description for {{project_name}}.
+
+USER:
+Partial summaries:
+{{content}}
+
+Guidelines:
+- Merge by topic, remove duplicates.
+- Keep factual and technical precision.
