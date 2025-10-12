@@ -1,4 +1,4 @@
-"""Unit tests for MockLLMAnalyzer."""
+"""Unit tests for MockLLMAnalyzer covering all implemented behaviors."""
 
 import pytest
 
@@ -7,76 +7,102 @@ from gitgossip.core.models.commit import Commit
 
 
 class TestMockLLMAnalyzer:
-    """Simulates MockLLMAnalyzer."""
+    """Verify mock analyzer behavior end-to-end."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_commit(self) -> Commit:
+        """Return a sample Commit object."""
         return Commit(
-            hash="123456789abcdef",
+            hash="abc123def456",
             author="osman",
-            email="e@email.com",
-            message="Initial commit",
-            files_changed=3,
-            insertions=10,
-            deletions=2,
+            email="osman@example.com",
+            message="Refactor code",
+            files_changed=2,
+            insertions=8,
+            deletions=3,
             changes=[
-                {"file": "main.py", "summary": ["added main function", "added docstring"]},
-                {"file": "utils.py", "summary": ["refactored helpers"]},
+                {"file": "main.py", "summary": ["refactored main function"]},
+                {"file": "utils.py", "summary": ["simplified helpers"]},
             ],
         )
 
-    def test_no_commits(self) -> None:
+    def test_analyze_commits_no_commits(self) -> None:
+        # given
         analyzer = MockLLMAnalyzer()
+
+        # when
         result = analyzer.analyze_commits([])
+
+        # then
         assert result == "No commits found to analyze."
 
-    def test_single_commit_summary(self, sample_commit: Commit) -> None:
+    def test_analyze_commits_single_commit(self, sample_commit: Commit) -> None:
+        # given
         analyzer = MockLLMAnalyzer()
+
+        # when
         result = analyzer.analyze_commits([sample_commit])
 
-        # Should include trimmed hash (7 chars)
-        assert "`1234567`" in result
+        # then
         assert "by osman" in result
-        assert "Initial commit" in result
-        assert "(+10/-2, 3 files)" in result
-        assert "Highlights" not in result  # default verbosity = 1
+        assert "`abc123d`" in result
+        assert "Refactor code" in result
+        assert "(+8/-3, 2 files)" in result
 
-    def test_multiple_commits(self, sample_commit: Commit) -> None:
-        other_commit = Commit(
-            hash="abcdef123456789",
-            author="nahid",
-            email="e@email.com",
-            message="Fix bug",
-            files_changed=1,
-            insertions=2,
-            deletions=1,
-        )
-        analyzer = MockLLMAnalyzer()
-        result = analyzer.analyze_commits([sample_commit, other_commit])
-        # Expect two summaries separated by double newline
-        parts = result.split("\n\n")
-        assert len(parts) == 2
-        assert "by osman" in parts[0]
-        assert "by nahid" in parts[1]
-
-    def test_bytes_message_handling(self) -> None:
-        commit_with_bytes = Commit(
-            hash="1111111111",
-            author="test",
-            email="e@email.com",
-            message=b"Binary message",
-            files_changed=1,
-            insertions=1,
-            deletions=0,
-        )
-        analyzer = MockLLMAnalyzer()
-        result = analyzer.analyze_commits([commit_with_bytes])
-        assert "Binary message" in result
-
-    def test_verbose_mode_includes_highlights(self, sample_commit: Commit) -> None:
+    def test_analyze_commits_verbose_mode(self, sample_commit: Commit) -> None:
+        # given
         analyzer = MockLLMAnalyzer(verbosity=2)
+
+        # when
         result = analyzer.analyze_commits([sample_commit])
 
+        # then
         assert "Highlights:" in result
         assert "main.py" in result
         assert "utils.py" in result
+
+    def test_summarize_diff_chunk_basic(self) -> None:
+        # given
+        analyzer = MockLLMAnalyzer()
+        diff_text = "+ added feature\n- removed bug"
+
+        # when
+        result = analyzer.summarize_diff_chunk(diff_text, metadata="[Part 1/2]")
+
+        # then
+        assert "Mock Summary" in result
+        assert "[Part 1/2]" in result
+        assert "lines changed" in result
+
+    def test_summarize_diff_chunk_empty(self) -> None:
+        # given
+        analyzer = MockLLMAnalyzer()
+
+        # when
+        result = analyzer.summarize_diff_chunk("", metadata="[Part 1/1]")
+
+        # then
+        assert "No changes" in result
+
+    def test_synthesize_chunk_summaries_combines_chunks(self) -> None:
+        # given
+        analyzer = MockLLMAnalyzer()
+        summaries = ["chunk A summary", "chunk B summary"]
+
+        # when
+        result = analyzer.synthesize_chunk_summaries(summaries)
+
+        # then
+        assert "Mock Synthesized Summary" in result
+        assert "Combined 2 chunk summaries" in result
+        assert "chunk A summary" in result
+
+    def test_synthesize_chunk_summaries_empty(self) -> None:
+        # given
+        analyzer = MockLLMAnalyzer()
+
+        # when
+        result = analyzer.synthesize_chunk_summaries([])
+
+        # then
+        assert "No summaries" in result

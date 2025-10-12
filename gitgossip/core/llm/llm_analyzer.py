@@ -9,6 +9,7 @@ from typing import List
 from openai import APIConnectionError, APIError, OpenAI, RateLimitError
 
 from gitgossip.core.interfaces.llm_analyzer import ILLMAnalyzer
+from gitgossip.core.llm.prompt_builder import PromptBuilder
 from gitgossip.core.models.commit import Commit
 
 
@@ -21,6 +22,7 @@ class LLMAnalyzer(ILLMAnalyzer):
     def __init__(self, model: str = "llama3:8b", api_key: str | None = None) -> None:
         """Initialize an LLMAnalyzer with an LLM model."""
         self.__client = OpenAI(base_url="http://localhost:11434/v1")
+        self.__prompt_builder = PromptBuilder(project_name="GitGossip")
         self.__model = model
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.__logger = logging.getLogger(self.__class__.__name__)
@@ -38,11 +40,16 @@ class LLMAnalyzer(ILLMAnalyzer):
         )
 
         try:
+            prompt = self.__prompt_builder.build(
+                "chunk",
+                content=commit_summaries,
+                context="Recent repository activity to summarize.",
+            )
             response = self.__client.chat.completions.create(
                 model=self.__model,
                 messages=[
                     {"role": "system", "content": "You summarize git repository activity clearly and succinctly."},
-                    {"role": "user", "content": commit_summaries},
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.4,
                 max_tokens=500,
@@ -63,50 +70,132 @@ class LLMAnalyzer(ILLMAnalyzer):
         if not diff_text or not diff_text.strip():
             return "No changes detected", "No differences found between branches."
 
-        # Keep the prompt compact and management-friendly
-        prompt = f"""
-            You are an expert software assistant generating concise and professional Merge Request
-            titles and descriptions from raw git diffs.
-        
-            Below is the code diff between two branches:
-        
-            {diff_text[:8000]}
-        
-            Instructions:
-            1. Create a short, action-oriented title (≤ 10 words).
-            2. Write 3-6 bullet points describing what changed and why, in non-technical terms.
-            3. Avoid commit messages; infer meaning from code modifications.
-        
-            Respond exactly in this format:
-        
-            Title: <short title>
-            Description:
-            - <bullet 1>
-            - <bullet 2>
-            ...
-            """
-
         try:
+            prompt = self.__prompt_builder.build(
+                "final",
+                content=self._safe_truncate(diff_text),
+                context="Generate a concise, factual Merge Request summary suitable for team review.",
+            )
+
             response = self.__client.chat.completions.create(
                 model=self.__model,
                 messages=[
-                    {"role": "system", "content": "You generate professional Merge Request titles and descriptions."},
+                    {
+                        "role": "system",
+                        "content": (
+                            "You create professional, factual Merge Request titles and " "descriptions from code diffs."
+                        ),
+                    },
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.4,
-                max_tokens=500,
+                temperature=0.3,
+                max_tokens=600,
             )
+
             content = response.choices[0].message.content
             if not content:
                 return "[LLM ERROR]", "Empty response from model"
             output = content.strip()
             return self._parse_mr_output(output)
+
         except (APIError, APIConnectionError, RateLimitError) as e:
             self.__logger.error("LLM API request failed: %s", e)
             return "[LLM ERROR]", str(e)
         except OSError as e:
             self.__logger.error("System or network issue during LLM MR call: %s", e)
             return "[SYSTEM ERROR]", str(e)
+
+    def summarize_diff_chunk(self, diff_chunk: str, metadata: str | None = None) -> str:
+        """Summarize a single diff chunk into concise technical bullet points."""
+        if not diff_chunk.strip():
+            return "No changes detected in this chunk."
+
+        try:
+            prompt = self.__prompt_builder.build(
+                "chunk",
+                content=self._safe_truncate(diff_chunk),
+                context="You are analyzing a small portion of a git diff to summarize code changes.",
+                metadata=metadata or "",
+            )
+
+            response = self.__client.chat.completions.create(
+                model=self.__model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You summarize code diffs concisely and factually without speculation.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+                max_tokens=400,
+            )
+
+            content = response.choices[0].message.content
+            if not content:
+                return "[LLM ERROR] Empty response from model"
+
+            return content.strip()
+
+        except (APIError, APIConnectionError, RateLimitError) as e:
+            self.__logger.error("LLM API request failed during chunk summary: %s", e)
+            return f"[LLM ERROR] {e}"
+        except OSError as e:
+            self.__logger.error("System or network issue during LLM chunk call: %s", e)
+            return f"[SYSTEM ERROR] {e}"
+
+    def synthesize_chunk_summaries(self, chunk_summaries: list[str]) -> str:
+        """Combine multiple chunk summaries into a coherent overall summary."""
+        if not chunk_summaries:
+            return "No summaries to synthesize."
+
+        try:
+            merged_text = "\n".join(chunk_summaries)
+
+            prompt = self.__prompt_builder.build(
+                "synthesis",
+                content=merged_text,
+                context="Merge partial diff summaries into one cohesive overview for a Merge Request.",
+            )
+
+            response = self.__client.chat.completions.create(
+                model=self.__model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You create professional, factual Merge Request titles and " "descriptions from code diffs."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+                max_tokens=600,
+            )
+
+            content = response.choices[0].message.content
+            if not content:
+                return "[LLM ERROR] Empty synthesis response"
+
+            return content.strip()
+
+        except (APIError, APIConnectionError, RateLimitError) as e:
+            self.__logger.error("LLM API request failed during synthesis: %s", e)
+            return f"[LLM ERROR] {e}"
+        except OSError as e:
+            self.__logger.error("System or network issue during synthesis call: %s", e)
+            return f"[SYSTEM ERROR] {e}"
+
+    def _safe_truncate(self, text: str, limit: int = 8000) -> str:
+        """Truncate large text safely to avoid context overflow."""
+        if len(text) > limit:
+            self.__logger.warning(
+                "Input text length (%d) exceeds model limit (%d). Truncating.",
+                len(text),
+                limit,
+            )
+            return text[:limit] + "\n\n[TRUNCATED DUE TO CONTEXT LIMIT]"
+        return text
 
     @staticmethod
     def _parse_mr_output(output: str) -> tuple[str, str]:

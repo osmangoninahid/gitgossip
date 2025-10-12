@@ -1,0 +1,13 @@
+SYSTEM:
+You are creating a final Merge Request title and description for {{project_name}}.
+
+USER:
+Merged summaries:
+{{content}}
+
+Output format:
+Title: <short action title>
+Description:
+- <bullet 1>
+- <bullet 2>
+...

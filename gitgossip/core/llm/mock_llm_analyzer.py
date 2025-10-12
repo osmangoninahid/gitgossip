@@ -58,3 +58,26 @@ class MockLLMAnalyzer(ILLMAnalyzer):
         ]
 
         return title, "\n".join(description_lines)
+
+    def summarize_diff_chunk(self, diff_chunk: str, metadata: str | None = None) -> str:
+        """Mock version of diff chunk summarization."""
+        if not diff_chunk.strip():
+            return "No changes detected in this chunk."
+
+        # Generate a deterministic mock summary
+        lines = diff_chunk.splitlines()
+        summary_lines = [line for line in lines if line.startswith(("+", "-"))][:5]
+        summary_preview = " ".join(summary_lines)[:200]
+
+        meta_info = f" ({metadata})" if metadata else ""
+        return f"[Mock Summary{meta_info}] {len(lines)} lines changed. Sample diff: {summary_preview or '...' }"
+
+    def synthesize_chunk_summaries(self, chunk_summaries: list[str]) -> str:
+        """Mock synthesis of multiple chunk summaries into one coherent overview."""
+        if not chunk_summaries:
+            return "No summaries to synthesize."
+
+        merged = "\n".join(chunk_summaries)
+        num_chunks = len(chunk_summaries)
+        preview = merged[:200].replace("\n", " ")
+        return f"[Mock Synthesized Summary] Combined {num_chunks} chunk summaries. " f"Preview: {preview}..."
