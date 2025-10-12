@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import List
 
 from openai import APIConnectionError, APIError, OpenAI, RateLimitError
@@ -19,12 +18,11 @@ class LLMAnalyzer(ILLMAnalyzer):
     And produce a repository-level summary of contributions.
     """
 
-    def __init__(self, model: str = "llama3:8b", api_key: str | None = None) -> None:
+    def __init__(self, base_url: str, model: str, api_key: str | None = None) -> None:
         """Initialize an LLMAnalyzer with an LLM model."""
-        self.__client = OpenAI(base_url="http://localhost:11434/v1")
+        self.__client = OpenAI(base_url=base_url, api_key=api_key)
         self.__prompt_builder = PromptBuilder(project_name="GitGossip")
         self.__model = model
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.__logger = logging.getLogger(self.__class__.__name__)
 
     def analyze_commits(self, commits: List[Commit]) -> str:

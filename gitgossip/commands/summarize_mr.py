@@ -9,8 +9,7 @@ from git import GitCommandError, Repo
 from rich.console import Console
 from rich.panel import Panel
 
-from gitgossip.core.llm.llm_analyzer import LLMAnalyzer
-from gitgossip.core.llm.mock_llm_analyzer import MockLLMAnalyzer
+from gitgossip.core.factories.llm_analyzer_factory import LLMAnalyzerFactory
 from gitgossip.core.parsers.commit_parser import CommitParser
 from gitgossip.core.providers.git_repo_provider import GitRepoProvider
 from gitgossip.core.services.summarizer_service import SummarizerService
@@ -44,7 +43,7 @@ def summarize_mr_cmd(
             console.print(f"[red]Unexpected error while pulling branch: {e}[/red]")
             raise typer.Exit(code=1)
     try:
-        analyzer = MockLLMAnalyzer() if use_mock else LLMAnalyzer(model="llama3:8b")
+        analyzer = LLMAnalyzerFactory().get_analyzer(use_mock=use_mock)
 
         summarizer = SummarizerService(
             commit_parser=CommitParser(repo_provider=GitRepoProvider(path=Path(path))),

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import typer
@@ -10,8 +9,7 @@ from git import InvalidGitRepositoryError, NoSuchPathError
 from rich.console import Console
 from rich.panel import Panel
 
-from gitgossip.core.llm.llm_analyzer import LLMAnalyzer
-from gitgossip.core.llm.mock_llm_analyzer import MockLLMAnalyzer
+from gitgossip.core.factories.llm_analyzer_factory import LLMAnalyzerFactory
 from gitgossip.core.parsers.commit_parser import CommitParser
 from gitgossip.core.providers.git_repo_provider import GitRepoProvider
 from gitgossip.core.services.repo_discovery_service import RepoDiscoveryService
@@ -59,15 +57,7 @@ def _summarize_repo(
     """Summarize commits for a single repository using the LLM analyzer."""
     try:
         # Initialize analyzer (mock or real)
-        analyzer = (
-            MockLLMAnalyzer()
-            if use_mock
-            else LLMAnalyzer(
-                model="llama3:8b",
-                api_key=os.getenv("OPENAI_API_KEY"),
-            )
-        )
-
+        analyzer = LLMAnalyzerFactory().get_analyzer(use_mock=use_mock)
         summarizer = SummarizerService(
             commit_parser=CommitParser(repo_provider=GitRepoProvider(path=repo_path)),
             llm_analyzer=analyzer,

@@ -7,11 +7,18 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from gitgossip.commands.init import init_config_cmd
 from gitgossip.commands.summarize import summarize_cmd
 from gitgossip.commands.summarize_mr import summarize_mr_cmd
 
 console = Console()
 app = typer.Typer(help="GitGossip 🧠 — Human-friendly Git summaries and digests for developers.")
+
+
+@app.command(help="Interactive setup wizard for GitGossip", rich_help_panel="Setup & Configuration")
+def init() -> None:
+    """Initialize or update GitGossip configuration interactively."""
+    init_config_cmd()
 
 
 @app.command(help="Human-friendly changes summary", rich_help_panel="Available")
