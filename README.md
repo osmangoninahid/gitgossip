@@ -10,11 +10,13 @@ GitGossip helps developers and managers instantly understand what changed, why i
 
 ✅ Generate **smart commit summaries** in natural language  
 ✅ Produce **Merge Request (MR) titles & descriptions** from code diffs  
+✅ Quickly **list recent commit authors** within a sprint window *(default: 15 days) you may need them to query 😄*  
 ✅ Works with **local LLMs (Ollama)** *or* **cloud APIs (OpenAI / Anyscale)**  
 ✅ Fully offline compatible  
 ✅ Configurable **system resource awareness**  
 ✅ Clean CLI experience with **Rich formatting**  
 ✅ Ready for cross-platform use (macOS / Linux)
+
 
 ---
 
@@ -124,7 +126,40 @@ Example output:
 ✨ Merge Request summary generated successfully!
 ```
 
+### 4️⃣ List recent commit authors
+```bash
+gitgossip list-authors
+````
+
+By default, this lists all unique authors who have committed within the last 15 days — a typical sprint window.
+Authors from the last 15 days
+Example output:
+```aiignore
+1. Osman Goni Nahid <osman@os.ai>
+2. Alice Smith <alice@company.com>
+
+Total unique authors: 2
+
+```
+
+Total unique authors: 2
+
 ---
+
+You can customize the time window or include all commit history:
+
+```aiignore
+# Show authors from the last 30 days
+gitgossip list-authors --since 30days
+
+# Show authors from all commits
+gitgossip list-authors --all-commits
+```
+
+💡 Tip: Use this command to quickly check active contributors before running
+gitgossip summarize --author "<name or email>"
+
+
 
 ## ☁️ Local vs Cloud Setup
 
