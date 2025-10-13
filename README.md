@@ -225,22 +225,32 @@ This feature will let you:
 
 ## 🧑‍💻 Contributing
 
-Contributions are welcome!
-Before submitting a PR, please run:
+Contributions are welcome! 🎉  
+If you'd like to improve GitGossip, follow these steps to set up your environment locally.
+
+---
+
+### 🧩 Developer Setup
+
+Clone and install dependencies using [uv](https://docs.astral.sh/uv/):
 
 ```bash
-ruff check .
-mypy .
-black .
-pytest -v
+git clone https://github.com/osmangoninahid/gitgossip.git
+cd gitgossip
+make install
 ```
 
-or
+Once installed, you can use the included Makefile to run all development tasks easily:
 
-```bash
-pre-commit run ruff --all-files
-uv run pytest -v
-```
+| Command                                       | Description                   |
+|-----------------------------------------------|-------------------------------|
+| `make install`                                | Install all dependencies      |
+| `make lint`                                   | Run Ruff linter               |
+| `make format`                                 | Format code with Black + Ruff |
+| `make test`                                   | Run the full pytest suite     |
+| `make run CMD="summarize-mr main --use-mock"` | Run a local CLI command       |
+| `make clean`                                  | Clean build/test artifacts    |
+
 
 ---
 
