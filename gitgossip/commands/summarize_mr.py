@@ -17,12 +17,7 @@ from gitgossip.core.services.summarizer_service import SummarizerService
 console = Console()
 
 
-def summarize_mr_cmd(
-    target_branch: str = typer.Argument(..., help="The branch to compare against (e.g., main or develop)."),
-    path: str = typer.Option(".", help="Path to the repository."),
-    pull: bool = typer.Option(False, "--pull", help="Pull latest target branch before diffing."),
-    use_mock: bool = typer.Option(False, help="Use mock analyzer (offline mode)."),
-) -> None:
+def summarize_mr_cmd(target_branch: str, path: str, pull: bool = False, use_mock: bool = False) -> None:
     """Generate a professional Merge Request title & description from code differences."""
     console.print(f"[bold green]Preparing to generate MR summary for target branch:[/bold green] {target_branch}")
 
