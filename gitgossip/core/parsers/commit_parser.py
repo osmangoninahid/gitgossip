@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
@@ -21,6 +20,7 @@ from gitgossip.core.constants import (
 from gitgossip.core.interfaces.commit_parser import ICommitParser
 from gitgossip.core.interfaces.repo_provider import IRepoProvider
 from gitgossip.core.models.commit import Commit
+from gitgossip.utils.parse import parse_since
 
 
 class CommitParser(ICommitParser):
@@ -63,7 +63,7 @@ class CommitParser(ICommitParser):
         if author is not None:
             kwargs["author"] = author
         if since is not None:
-            kwargs["since"] = self._parse_since(since)
+            kwargs["since"] = parse_since(since)
 
         commits: list[Commit] = []
         for commit in self.__repo.iter_commits(max_count=limit, **kwargs):
@@ -163,22 +163,6 @@ class CommitParser(ICommitParser):
         if current_hunk:
             hunks.append(current_hunk)
         return hunks
-
-    @staticmethod
-    def _parse_since(since: str) -> str:
-        """Convert a 'since' argument into an ISO date string."""
-        since = since.strip().lower()
-        if since.endswith("days"):
-            try:
-                days = int(since.replace("days", "").strip())
-            except ValueError:
-                raise ValueError(f"{since} is not a valid ISO date")
-            return (datetime.now() - timedelta(days=days)).isoformat()
-        try:
-            dt = datetime.fromisoformat(since)
-            return dt.isoformat()
-        except ValueError:
-            raise ValueError(f"{since} is not a valid ISO date")
 
     @staticmethod
     def _detect_language(path: str) -> str:

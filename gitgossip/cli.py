@@ -1,4 +1,4 @@
-"""CLI entrypoint for GitGossip — initializes commands and handles user input."""
+"""CLI entrypoint for GitGossip — human-friendly Git summaries and digests."""
 
 from __future__ import annotations
 
@@ -8,50 +8,92 @@ import typer
 from rich.console import Console
 
 from gitgossip.commands.init import init_config_cmd
+from gitgossip.commands.list_authors import list_all_authors
 from gitgossip.commands.summarize import summarize_cmd
 from gitgossip.commands.summarize_mr import summarize_mr_cmd
 
 console = Console()
-app = typer.Typer(help="GitGossip 🧠 — Human-friendly Git summaries and digests for developers.")
+app = typer.Typer(help="GitGossip 🧠 — AI-powered commit summaries and merge request digests.")
 
 
-@app.command(help="Interactive setup wizard for GitGossip", rich_help_panel="Setup & Configuration")
+@app.command(help="Run the interactive setup wizard for GitGossip.", rich_help_panel="Setup & Configuration")
 def init() -> None:
     """Initialize or update GitGossip configuration interactively."""
     init_config_cmd()
 
 
-@app.command(help="Human-friendly changes summary", rich_help_panel="Available")
+@app.command(help="List authors who have contributed recently.", rich_help_panel="Repository Insights")
+def list_authors(
+    path: str = typer.Argument(
+        default_factory=Path.cwd,
+        help="Path to a Git repository or a directory containing multiple repositories (default: current directory).",
+    ),
+    since: str = typer.Option(
+        "15days",
+        "--since",
+        "-s",
+        help="Show authors of commits since a specific time. Accepts formats like '7days' or '2025-10-01'.",
+    ),
+    all_commits: bool = typer.Option(
+        False,
+        "--all-commits",
+        "-a",
+        help="Include authors from all commits in history, ignoring the --since filter.",
+    ),
+) -> None:
+    """Display all unique commit authors in one or more repositories."""
+    list_all_authors(path=path, since=since, all_commits=all_commits)
+
+
+@app.command(help="Summarize recent commits into a human-friendly digest.", rich_help_panel="AI Summaries")
 def summarize(
     path: str = typer.Argument(
         default_factory=Path.cwd,
-        help="Path to the Git repository (default: current directory)",
+        help="Path to the Git repository (default: current directory).",
     ),
-    author: str | None = typer.Option(None, "--author", "-a", help="Filter by author name or email"),
-    since: str | None = typer.Option(None, "--since", "-s", help="Filter commits since (e.g. '7days' or '2025-10-01')"),
-    use_mock: bool = typer.Option(False, "--use-mock", help="Use mock llm analyzer instead of real llm analyzer"),
+    author: str | None = typer.Option(
+        None,
+        "--author",
+        "-a",
+        help="Filter commits by author name or email. Use 'gitgossip list-authors' to view available authors.",
+    ),
+    since: str | None = typer.Option(
+        None,
+        "--since",
+        "-s",
+        help="Show commits since a specific time (e.g. '7days' or '2025-10-01'). Default: 15 days.",
+    ),
+    use_mock: bool = typer.Option(
+        False,
+        "--use-mock",
+        help="Use the mock LLM analyzer (for local testing) instead of calling a real AI model.",
+    ),
 ) -> None:
-    """Summarize command."""
+    """Generate a plain-English summary of recent Git commits."""
     summarize_cmd(path=path, author=author, since=since, use_mock=use_mock)
 
 
-@app.command(help="Generate Merge Request title & description", rich_help_panel="Available")
+@app.command(help="Generate an AI-assisted Merge Request title and description.", rich_help_panel="AI Summaries")
 def summarize_mr(
-    target_branch: str = typer.Argument(..., help="Branch to compare against (e.g., main or develop)"),
-    path: str = typer.Option(".", "--path", help="Path to the Git repository"),
-    pull: bool = typer.Option(False, "--pull", help="Pull latest target branch before diffing"),
-    use_mock: bool = typer.Option(False, "--use-mock", help="Use mock llm analyzer instead of real llm analyzer"),
+    target_branch: str = typer.Argument(..., help="Branch to compare against (e.g. main, develop)."),
+    path: str = typer.Option(".", "--path", help="Path to the Git repository (default: current directory)."),
+    pull: bool = typer.Option(False, "--pull", help="Pull the latest target branch before creating the diff."),
+    use_mock: bool = typer.Option(False, "--use-mock", help="Use the mock LLM analyzer instead of a real model."),
 ) -> None:
-    """Summarize Merge Request command."""
+    """Generate a human-readable summary for a Merge Request."""
     summarize_mr_cmd(target_branch=target_branch, path=path, pull=pull, use_mock=use_mock)
 
 
-@app.command(rich_help_panel="Coming soon", options_metavar="Coming soon...")
+@app.command(rich_help_panel="Miscellaneous")
 def digest() -> None:
-    """Digest tool."""
+    """(Coming soon) Generate a full developer activity digest."""
     typer.secho("🚧 Coming soon... This feature is under development.", fg=typer.colors.YELLOW, bold=True)
     raise typer.Exit(code=0)
 
 
-if __name__ == "__app__":
-    app()
+@app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context) -> None:
+    """Show help when no command is provided."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
