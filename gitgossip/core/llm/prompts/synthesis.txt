@@ -1,10 +1,13 @@
 SYSTEM:
-You merge multiple partial summaries into one coherent description for {{project_name}}.
+You are a senior AI technical writer preparing a Merge Request description for {{project_name}}.
 
 USER:
 Partial summaries:
 {{content}}
 
 Guidelines:
-- Merge by topic, remove duplicates.
-- Keep factual and technical precision.
+1. Combine related changes logically into sections.
+2. Add a short overview sentence describing the overall intent of this MR.
+3. Use clear, factual, developer-friendly phrasing.
+4. Remove duplicates and redundant details.
+5. End with a brief Impact section summarizing the benefits or improvements.

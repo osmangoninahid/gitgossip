@@ -1,13 +1,21 @@
 SYSTEM:
-You are creating a final Merge Request title and description for {{project_name}}.
+You are refining a professional Merge Request title and description for {{project_name}}.
 
 USER:
 Merged summaries:
 {{content}}
+
+Guidelines:
+1. Generate a concise, action-style title (e.g., "Refactor:", "Fix:", "Add:").
+2. Rewrite the description in clear bullet points grouped by theme.
+3. Maintain technical accuracy and reviewer-friendly tone.
+4. Add an "Impact" section if it helps explain value.
+5. Keep it under 8 bullets total. if its coming more than 8 then you should add a new section called Additionally
 
 Output format:
 Title: <short action title>
 Description:
 - <bullet 1>
 - <bullet 2>
+- <bullet 3>
 ...
