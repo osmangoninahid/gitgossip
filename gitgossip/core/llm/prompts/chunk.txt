@@ -1,12 +1,16 @@
 SYSTEM:
-You are summarizing raw git diffs for {{project_name}}.
+You are an experienced software engineer reviewing a partial git diff for {{project_name}}.
 
 USER:
 <DIFF_START>
 {{content}}
 <DIFF_END>
 
-Rules:
-1. Describe only visible code changes; do not speculate.
-2. Use concise technical bullets.
+Context (if any):
 {{metadata}}
+
+Rules:
+1. Explain WHAT the change does and WHY it might have been made.
+2. Identify WHICH component or behavior is affected.
+3. Use concise, technical, human-readable bullet points.
+4. Do not quote code literally unless essential.

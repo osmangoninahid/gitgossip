@@ -6,6 +6,7 @@ import logging
 from typing import List
 
 from openai import APIConnectionError, APIError, OpenAI, RateLimitError
+from rich.console import Console
 
 from gitgossip.core.interfaces.llm_analyzer import ILLMAnalyzer
 from gitgossip.core.llm.prompt_builder import PromptBuilder
@@ -24,6 +25,7 @@ class LLMAnalyzer(ILLMAnalyzer):
         self.__prompt_builder = PromptBuilder(project_name="GitGossip")
         self.__model = model
         self.__logger = logging.getLogger(self.__class__.__name__)
+        self.__console = Console()
 
     def analyze_commits(self, commits: List[Commit]) -> str:
         """Summarize multiple commits as a coherent changelog."""
@@ -43,15 +45,16 @@ class LLMAnalyzer(ILLMAnalyzer):
                 content=commit_summaries,
                 context="Recent repository activity to summarize.",
             )
-            response = self.__client.chat.completions.create(
-                model=self.__model,
-                messages=[
-                    {"role": "system", "content": "You summarize git repository activity clearly and succinctly."},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.4,
-                max_tokens=500,
-            )
+            with self.__console.status("[bold cyan]Analyzing commits...", spinner="dots"):
+                response = self.__client.chat.completions.create(
+                    model=self.__model,
+                    messages=[
+                        {"role": "system", "content": "You summarize git repository activity clearly and succinctly."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.4,
+                    max_tokens=500,
+                )
             content = response.choices[0].message.content
             if not content:
                 return "[LLM ERROR] Empty response from model"
@@ -74,21 +77,22 @@ class LLMAnalyzer(ILLMAnalyzer):
                 content=self._safe_truncate(diff_text),
                 context="Generate a concise, factual Merge Request summary suitable for team review.",
             )
-
-            response = self.__client.chat.completions.create(
-                model=self.__model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You create professional, factual Merge Request titles and " "descriptions from code diffs."
-                        ),
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.3,
-                max_tokens=600,
-            )
+            with self.__console.status("[bold cyan] Finalizing merge request summary...", spinner="aesthetic"):
+                response = self.__client.chat.completions.create(
+                    model=self.__model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You create professional, factual Merge Request titles and "
+                                "descriptions from code diffs."
+                            ),
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=600,
+                )
 
             content = response.choices[0].message.content
             if not content:
@@ -116,18 +120,19 @@ class LLMAnalyzer(ILLMAnalyzer):
                 metadata=metadata or "",
             )
 
-            response = self.__client.chat.completions.create(
-                model=self.__model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You summarize code diffs concisely and factually without speculation.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.3,
-                max_tokens=400,
-            )
+            with self.__console.status("[bold cyan]Summarizing diff chunk...", spinner="aesthetic"):
+                response = self.__client.chat.completions.create(
+                    model=self.__model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You summarize code diffs concisely and factually without speculation.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=400,
+                )
 
             content = response.choices[0].message.content
             if not content:
@@ -155,21 +160,22 @@ class LLMAnalyzer(ILLMAnalyzer):
                 content=merged_text,
                 context="Merge partial diff summaries into one cohesive overview for a Merge Request.",
             )
-
-            response = self.__client.chat.completions.create(
-                model=self.__model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You create professional, factual Merge Request titles and " "descriptions from code diffs."
-                        ),
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.3,
-                max_tokens=600,
-            )
+            with self.__console.status("[bold cyan] Synthesising diff chunk...", spinner="arrow3"):
+                response = self.__client.chat.completions.create(
+                    model=self.__model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You create professional, factual Merge Request titles and "
+                                "descriptions from code diffs."
+                            ),
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=600,
+                )
 
             content = response.choices[0].message.content
             if not content:

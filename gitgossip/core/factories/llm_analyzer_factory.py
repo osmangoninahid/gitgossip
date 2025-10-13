@@ -55,7 +55,7 @@ class LLMAnalyzerFactory:
             self.__logger.error(msg)
             raise ValueError(msg)
 
-        self.__logger.info(
+        self.__logger.debug(
             "Initializing LLMAnalyzer: provider=%s, model=%s, base_url=%s",
             provider,
             model,

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.logging import RichHandler
 
 from gitgossip.commands.init import init_config_cmd
 from gitgossip.commands.list_authors import list_all_authors
@@ -14,6 +16,15 @@ from gitgossip.commands.summarize_mr import summarize_mr_cmd
 
 console = Console()
 app = typer.Typer(help="GitGossip 🧠 — AI-powered commit summaries and merge request digests.")
+
+
+# Configure Rich logging
+logging.basicConfig(
+    level=logging.WARNING, format="%(message)s", handlers=[RichHandler(console=console, rich_tracebacks=True)]
+)
+
+# Create a named logger
+logger = logging.getLogger("gitgossip")
 
 
 @app.command(help="Run the interactive setup wizard for GitGossip.", rich_help_panel="Setup & Configuration")
