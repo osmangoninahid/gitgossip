@@ -30,26 +30,6 @@ repos:
         entry: uv run mypy
         language: system
         types_or: [python]
-  - repo: local
-    hooks:
-      - id: show-conventional-commit-types
-        name: 💡 Conventional Commit Help
-        entry: >
-          bash -c "echo 'Allowed Conventional Commit types:
-            • feat(scope): A new feature
-            • fix(scope): A bug fix
-            • chore(scope): Build or tooling changes
-            • test(scope): Adding or modifying tests
-            • refactor(scope): Code change that neither fixes a bug nor adds a feature
-            • docs(scope): Documentation updates
-            • merge(scope): Merge-related commits
-            • custom(scope): Internal/custom commits
-          '"
-        language: system
-        stages: [ commit-msg ]
-        pass_filenames: false
-        always_run: true
-        verbose: true
 
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.6.0
