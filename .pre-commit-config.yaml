@@ -2,31 +2,80 @@ repos:
   - repo: local
     hooks:
       - id: ruff
-        name: ruff
+        name: Ruff Linter
         entry: uv run ruff check .
         language: system
         pass_filenames: false
 
       - id: black
-        name: black
+        name: Black Formatter
         entry: uv run black
         language: system
         types_or: [python]
 
       - id: isort
-        name: isort
+        name: Isort Imports
         entry: uv run isort
         language: system
         types_or: [python]
 
       - id: pylint
-        name: pylint
+        name: Pylint
         entry: uv run pylint
         language: system
         types_or: [python]
 
       - id: mypy
-        name: mypy
+        name: Mypy Type Checker
         entry: uv run mypy
         language: system
         types_or: [python]
+  - repo: local
+    hooks:
+      - id: show-conventional-commit-types
+        name: 💡 Conventional Commit Help
+        entry: >
+          bash -c "echo 'Allowed Conventional Commit types:
+            • feat(scope): A new feature
+            • fix(scope): A bug fix
+            • chore(scope): Build or tooling changes
+            • test(scope): Adding or modifying tests
+            • refactor(scope): Code change that neither fixes a bug nor adds a feature
+            • docs(scope): Documentation updates
+            • merge(scope): Merge-related commits
+            • custom(scope): Internal/custom commits
+          '"
+        language: system
+        stages: [ commit-msg ]
+        pass_filenames: false
+        always_run: true
+        verbose: true
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - --strict
+          - --force-scope
+          - --verbose
+          - feat
+          - fix
+          - chore
+          - test
+          - custom
+          - merge
+          - docs
+          - refactor
+
+  - repo: local
+    hooks:
+      - id: uv-sync-locked
+        name: UV sync locked dependencies
+        description: Ensures pyproject.toml and uv.lock remain synchronized.
+        entry: uv sync --locked --group local
+        language: python
+        pass_filenames: false
+        additional_dependencies: [uv]
+        files: ^(pyproject\.toml|uv\.lock)$
