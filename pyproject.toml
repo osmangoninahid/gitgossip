@@ -1,6 +1,6 @@
 [project]
 name = "gitgossip"
-version = "0.1.0"
+version = "0.1.1"
 description = "AI that spills the tea on your commits — human-readable Git summaries."
 readme = "README.md"
 license = { text = "MIT" }
