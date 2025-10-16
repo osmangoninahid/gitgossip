@@ -1,5 +1,10 @@
 # 🧠 GitGossip — AI-Powered Git Commit Summarizer
 
+**Install via:**  
+
+[![PyPI](https://img.shields.io/pypi/v/gitgossip.svg)](https://pypi.org/project/gitgossip/)
+[![Homebrew](https://img.shields.io/badge/homebrew-gitgossip-blue)](https://github.com/osmangoninahid/homebrew-gitgossip)
+
 > **GitGossip** turns your commit history into human-readable summaries and merge request descriptions — powered by LLMs like Ollama (local) or OpenAI (cloud).
 
 GitGossip helps developers and managers instantly understand what changed, why it changed, and how large codebases evolve — **without reading every diff manually**.
