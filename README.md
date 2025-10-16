@@ -42,6 +42,14 @@ uv sync
 uv run gitgossip --help
 ```
 
+🍺 Using Homebrew
+
+```bash
+brew tap osmangoninahid/gitgossip
+brew install gitgossip
+
+```
+
 ### 🐳 Optional: Run via Docker (Local LLM mode)
 
 If you prefer not to install Ollama on your host:
@@ -230,8 +238,13 @@ This feature will let you:
 
 ## 🧑‍💻 Contributing
 
-Contributions are welcome! 🎉  
-If you'd like to improve GitGossip, follow these steps to set up your environment locally.
+We love community contributions!
+Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) guide for:
+
+- Local setup instructions
+- Coding standards and pre-commit hooks
+- Commit message conventions
+- Release and publishing workflow
 
 ---
 
