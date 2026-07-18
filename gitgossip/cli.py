@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
+from gitgossip.commands.commit import commit_cmd
 from gitgossip.commands.init import init_config_cmd
 from gitgossip.commands.list_authors import list_all_authors
 from gitgossip.commands.summarize import summarize_cmd
@@ -93,6 +94,19 @@ def summarize_mr(
 ) -> None:
     """Generate a human-readable summary for a Merge Request."""
     summarize_mr_cmd(target_branch=target_branch, path=path, pull=pull, use_mock=use_mock)
+
+
+@app.command(help="Generate an AI commit message from staged changes.", rich_help_panel="AI Summaries")
+def commit(
+    path: str = typer.Option(".", "--path", help="Path to the Git repository (default: current directory)."),
+    print_only: bool = typer.Option(False, "--print", help="Print the generated message and exit (no commit)."),
+    hook_file: str | None = typer.Option(
+        None, "--hook", help="prepare-commit-msg mode: write the message into the given file and exit 0."
+    ),
+    use_mock: bool = typer.Option(False, "--use-mock", help="Use the mock LLM analyzer instead of a real model."),
+) -> None:
+    """Generate a Conventional Commit message from the staged diff."""
+    commit_cmd(path=path, print_only=print_only, hook_file=hook_file, use_mock=use_mock)
 
 
 @app.command(rich_help_panel="Miscellaneous")
