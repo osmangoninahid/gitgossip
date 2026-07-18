@@ -7,6 +7,7 @@ from typing import Any
 
 from gitgossip.config.config_service import ConfigService
 from gitgossip.core.interfaces.llm_analyzer import ILLMAnalyzer
+from gitgossip.core.llm.clients.openai_chat_client import OpenAIChatClient
 from gitgossip.core.llm.llm_analyzer import LLMAnalyzer
 from gitgossip.core.llm.mock_llm_analyzer import MockLLMAnalyzer
 
@@ -62,4 +63,4 @@ class LLMAnalyzerFactory:
             base_url,
         )
 
-        return LLMAnalyzer(model=model, api_key=api_key, base_url=base_url)
+        return LLMAnalyzer(chat_client=OpenAIChatClient(base_url=base_url, model=model, api_key=api_key))
