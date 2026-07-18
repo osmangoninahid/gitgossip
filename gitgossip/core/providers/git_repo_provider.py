@@ -39,7 +39,7 @@ class GitRepoProvider(IRepoProvider):
     def get_staged_diff(self) -> str:
         """Return the textual diff of currently staged changes (empty string when nothing is staged)."""
         repo = self.get_repo()
-        return repo.git.diff("--cached", unified=3)
+        return str(repo.git.diff("--cached", unified=3))
 
     def get_staged_files(self) -> list[str]:
         """Return the paths of currently staged files (empty list when nothing is staged)."""

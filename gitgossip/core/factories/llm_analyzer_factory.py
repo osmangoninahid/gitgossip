@@ -34,9 +34,7 @@ class LLMAnalyzerFactory:
         llm_cfg: dict[str, Any] = cfg.get("llm", {})
         provider = llm_cfg.get("provider")
 
-        chat_client = (
-            self.__build_agent_client(llm_cfg) if provider == "agent" else self.__build_openai_client(llm_cfg)
-        )
+        chat_client = self.__build_agent_client(llm_cfg) if provider == "agent" else self.__build_openai_client(llm_cfg)
 
         prompts_dir = cfg.get("paths", {}).get("prompts")
         prompt_builder = PromptBuilder(user_dir=Path(prompts_dir) if prompts_dir else None)
@@ -72,4 +70,4 @@ class LLMAnalyzerFactory:
             self.__logger.error(msg)
             raise ValueError(msg)
         self.__logger.debug("Initializing OpenAIChatClient: model=%s, base_url=%s", model, base_url)
-        return OpenAIChatClient(base_url=base_url, model=model, api_key=llm_cfg.get("api_key"))
+        return OpenAIChatClient(base_url=str(base_url), model=str(model), api_key=llm_cfg.get("api_key"))

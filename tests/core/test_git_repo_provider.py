@@ -44,7 +44,9 @@ def staged_repo(tmp_path: Path) -> Path:
     subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
     (tmp_path / "a.txt").write_text("one\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(tmp_path), "add", "a.txt"], check=True)
-    subprocess.run(["git", "-C", str(tmp_path), "commit", "--no-gpg-sign", "-m", "init"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "--no-gpg-sign", "-m", "init"], check=True, capture_output=True
+    )
     (tmp_path / "a.txt").write_text("one\ntwo\n", encoding="utf-8")
     (tmp_path / "b.txt").write_text("new file\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(tmp_path), "add", "a.txt", "b.txt"], check=True)
