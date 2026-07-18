@@ -69,6 +69,25 @@ class LLMAnalyzer(ILLMAnalyzer):
             return "[LLM ERROR]", output.removeprefix("[LLM ERROR]").strip()
         return self._parse_mr_output(output)
 
+    def generate_commit_message(self, diff_text: str, file_summary: str) -> str:
+        """Generate a Conventional Commit message from a staged diff."""
+        if not diff_text.strip():
+            return "[LLM ERROR] No staged changes to describe."
+
+        prompt = self.__prompt_builder.build(
+            "commit",
+            content=self._safe_truncate(diff_text),
+            context="Generate a conventional commit message for the staged changes.",
+            metadata=file_summary,
+        )
+        return self.__complete(
+            status="[bold cyan]Drafting commit message...",
+            system="You write concise, factual git commit messages.",
+            user=prompt,
+            temperature=0.3,
+            max_tokens=300,
+        )
+
     def summarize_diff_chunk(self, diff_chunk: str, metadata: str | None = None) -> str:
         """Summarize a single diff chunk into concise technical bullet points."""
         if not diff_chunk.strip():

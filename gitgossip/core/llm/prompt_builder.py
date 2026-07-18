@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import Literal
 
-PromptType = Literal["chunk", "synthesis", "final"]
+PromptType = Literal["chunk", "synthesis", "final", "commit"]
 
 
 class PromptBuilder:
@@ -71,4 +71,9 @@ class PromptBuilder:
             return "You are summarizing a raw git diff for {{project_name}}:\n\n{{content}}"
         if prompt_type == "synthesis":
             return "You are merging partial summaries into one summary for {{project_name}}:\n\n{{content}}"
+        if prompt_type == "commit":
+            return (
+                "Write a Conventional Commit message (type(scope): description) "
+                "for {{project_name}} from this staged diff:\n\n{{content}}"
+            )
         return "You are generating a final Merge Request title and description for {{project_name}}:\n\n{{content}}"

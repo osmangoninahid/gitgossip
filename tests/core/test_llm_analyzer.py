@@ -106,3 +106,14 @@ class TestMockLLMAnalyzer:
 
         # then
         assert "No summaries" in result
+
+    def test_generate_commit_message_mock(self) -> None:
+        # given
+        analyzer = MockLLMAnalyzer()
+        diff = "diff --git a/x.py b/x.py\n+new\ndiff --git a/y.py b/y.py\n+more"
+
+        # when
+        result = analyzer.generate_commit_message(diff, "x.py, y.py")
+
+        # then
+        assert result == "chore: mock commit message (2 files changed)"

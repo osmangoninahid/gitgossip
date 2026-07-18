@@ -97,3 +97,27 @@ class TestLLMAnalyzerTransport:
         assert chunk == "chunk summary"
         assert synthesis == "chunk summary"
         assert len(client.calls) == 2
+
+    def test_generate_commit_message_delegates(self) -> None:
+        # given
+        client = FakeChatClient(reply="feat(core): add widget")
+        analyzer = LLMAnalyzer(chat_client=client)
+
+        # when
+        result = analyzer.generate_commit_message("diff --git a/w.py b/w.py\n+widget", "w.py")
+
+        # then
+        assert result == "feat(core): add widget"
+        assert "w.py" in client.calls[0]["user"]
+
+    def test_generate_commit_message_empty_diff_short_circuits(self) -> None:
+        # given
+        client = FakeChatClient()
+        analyzer = LLMAnalyzer(chat_client=client)
+
+        # when
+        result = analyzer.generate_commit_message("   ", "")
+
+        # then
+        assert result.startswith("[LLM ERROR]")
+        assert client.calls == []
