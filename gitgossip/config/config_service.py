@@ -81,10 +81,12 @@ class ConfigService:
         """Return a default configuration structure."""
         return {
             "llm": {
-                "provider": "local",  # or "cloud"
+                "provider": "local",  # local | cloud | agent
+                "agent_cli": "",  # claude | codex (used when provider=agent)
                 "model": "qwen2.5-coder:1.5b",
                 "base_url": "http://localhost:11434/v1",
                 "api_key": None,
+                "timeout": 120,  # seconds, agent provider only
             },
             "paths": {
                 "prompts": str(Path.home() / ".gitgossip" / "prompts"),

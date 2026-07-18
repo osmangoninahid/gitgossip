@@ -12,8 +12,8 @@ PromptType = Literal["chunk", "synthesis", "final"]
 class PromptBuilder:
     """Loads and builds prompt templates (default or user-defined)."""
 
-    def __init__(self, project_name: str = "GitGossip") -> None:
-        """Initialize PromptBuilder."""
+    def __init__(self, project_name: str = "GitGossip", user_dir: Path | None = None) -> None:
+        """Initialize PromptBuilder with an optional custom directory for user templates."""
         self.project_name = project_name
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -21,7 +21,7 @@ class PromptBuilder:
         self._default_dir = Path(__file__).parent / "prompts"
 
         # User custom prompts can live here
-        self._user_dir = Path.home() / ".gitgossip" / "prompts"
+        self._user_dir = user_dir or Path.home() / ".gitgossip" / "prompts"
         self._user_dir.mkdir(parents=True, exist_ok=True)
 
     def build(
