@@ -12,6 +12,7 @@ from rich.logging import RichHandler
 from gitgossip.commands.commit import commit_cmd
 from gitgossip.commands.init import init_config_cmd
 from gitgossip.commands.list_authors import list_all_authors
+from gitgossip.commands.prompts import prompts_init_cmd
 from gitgossip.commands.summarize import summarize_cmd
 from gitgossip.commands.summarize_mr import summarize_mr_cmd
 
@@ -26,6 +27,15 @@ logging.basicConfig(
 
 # Create a named logger
 logger = logging.getLogger("gitgossip")
+
+prompts_app = typer.Typer(help="Manage custom prompt templates.")
+app.add_typer(prompts_app, name="prompts", rich_help_panel="Setup & Configuration")
+
+
+@prompts_app.command("init")
+def prompts_init() -> None:
+    """Scaffold editable prompt templates into your prompts directory."""
+    prompts_init_cmd()
 
 
 @app.command(help="Run the interactive setup wizard for GitGossip.", rich_help_panel="Setup & Configuration")
