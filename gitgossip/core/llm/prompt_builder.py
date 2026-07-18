@@ -6,14 +6,14 @@ import logging
 from pathlib import Path
 from typing import Literal
 
-PromptType = Literal["chunk", "synthesis", "final"]
+PromptType = Literal["chunk", "synthesis", "final", "commit"]
 
 
 class PromptBuilder:
     """Loads and builds prompt templates (default or user-defined)."""
 
-    def __init__(self, project_name: str = "GitGossip") -> None:
-        """Initialize PromptBuilder."""
+    def __init__(self, project_name: str = "GitGossip", user_dir: Path | None = None) -> None:
+        """Initialize PromptBuilder with an optional custom directory for user templates."""
         self.project_name = project_name
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -21,7 +21,7 @@ class PromptBuilder:
         self._default_dir = Path(__file__).parent / "prompts"
 
         # User custom prompts can live here
-        self._user_dir = Path.home() / ".gitgossip" / "prompts"
+        self._user_dir = user_dir or Path.home() / ".gitgossip" / "prompts"
         self._user_dir.mkdir(parents=True, exist_ok=True)
 
     def build(
@@ -71,4 +71,9 @@ class PromptBuilder:
             return "You are summarizing a raw git diff for {{project_name}}:\n\n{{content}}"
         if prompt_type == "synthesis":
             return "You are merging partial summaries into one summary for {{project_name}}:\n\n{{content}}"
+        if prompt_type == "commit":
+            return (
+                "Write a Conventional Commit message (type(scope): description) "
+                "for {{project_name}} from this staged diff:\n\n{{content}}"
+            )
         return "You are generating a final Merge Request title and description for {{project_name}}:\n\n{{content}}"

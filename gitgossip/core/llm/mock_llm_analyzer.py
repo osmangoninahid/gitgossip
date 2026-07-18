@@ -59,6 +59,13 @@ class MockLLMAnalyzer(ILLMAnalyzer):
 
         return title, "\n".join(description_lines)
 
+    def generate_commit_message(self, diff_text: str, file_summary: str) -> str:
+        """Simulate commit message generation from a staged diff."""
+        if not diff_text.strip():
+            return "[LLM ERROR] No staged changes to describe."
+        changed_files = sum(1 for line in diff_text.splitlines() if line.startswith("diff --git"))
+        return f"chore: mock commit message ({changed_files} files changed)"
+
     def summarize_diff_chunk(self, diff_chunk: str, metadata: str | None = None) -> str:
         """Mock version of diff chunk summarization."""
         if not diff_chunk.strip():

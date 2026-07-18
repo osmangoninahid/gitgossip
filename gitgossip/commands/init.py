@@ -35,10 +35,10 @@ def _get_local_ollama_models() -> list[str]:
 
 
 def _select_provider(default_provider: str) -> str:
-    """Prompt user to choose between local or cloud provider."""
+    """Prompt user to choose between local, cloud, or agent provider."""
     provider_input = (
         Prompt.ask(
-            "Select LLM provider [local/cloud]",
+            "Select LLM provider [local/cloud/agent]",
             default=default_provider,
         )
         .strip()
@@ -49,6 +49,8 @@ def _select_provider(default_provider: str) -> str:
         return "local"
     if provider_input in {"c", "cloud"}:
         return "cloud"
+    if provider_input in {"a", "agent"}:
+        return "agent"
 
     console.print("[yellow]Invalid provider input. Defaulting to 'local'.[/yellow]")
     return "local"
@@ -91,6 +93,32 @@ def _configure_cloud_llm(cfg: Dict[str, Any]) -> None:
     cfg["llm"]["api_key"] = api_key
 
 
+def _configure_agent_llm(cfg: Dict[str, Any]) -> None:
+    """Prompt user to pick an installed coding-agent CLI (claude or codex)."""
+    detected = [name for name in ("claude", "codex") if shutil.which(name)]
+    if detected:
+        console.print(f"[green]Detected installed agent CLIs: {', '.join(detected)}[/green]")
+    else:
+        console.print(
+            "[yellow]No agent CLI detected on PATH.[/yellow] "
+            "Install Claude Code (npm install -g @anthropic-ai/claude-code) "
+            "or Codex CLI (npm install -g @openai/codex) first."
+        )
+
+    agent_cli = Prompt.ask(
+        "Select agent CLI",
+        choices=["claude", "codex"],
+        default=detected[0] if detected else "claude",
+    )
+    model = Prompt.ask(
+        "Model override (leave blank for the CLI's default)",
+        default=cfg["llm"].get("model", "") or "",
+    )
+
+    cfg["llm"]["agent_cli"] = agent_cli
+    cfg["llm"]["model"] = model
+
+
 def _warn_if_insufficient_resources(model_name: str) -> None:
     """Warn user if selected model might exceed system capacity."""
     # Extract model parameter size (e.g., 7b → 7)
@@ -127,6 +155,8 @@ def init_config_cmd() -> None:
     if provider == "local":
         cfg["llm"]["model"] = _select_local_model(cfg["llm"].get("model", ""))
         cfg["llm"]["api_key"] = "local-dummy"  # To by-pass openai client
+    elif provider == "agent":
+        _configure_agent_llm(cfg)
     else:
         _configure_cloud_llm(cfg)
 

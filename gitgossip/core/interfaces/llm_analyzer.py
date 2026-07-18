@@ -21,6 +21,11 @@ class ILLMAnalyzer(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def generate_commit_message(self, diff_text: str, file_summary: str) -> str:
+        """Generate a Conventional Commit message from a staged diff."""
+        raise NotImplementedError
+
+    @abstractmethod
     def summarize_diff_chunk(self, diff_chunk: str, metadata: str | None = None) -> str:
         """Summarize a single diff chunk into concise bullet points."""
         raise NotImplementedError

@@ -15,6 +15,9 @@ GitGossip helps developers and managers instantly understand what changed, why i
 
 ✅ Generate **smart commit summaries** in natural language  
 ✅ Produce **Merge Request (MR) titles & descriptions** from code diffs  
+✅ AI **commit messages** from staged changes (interactive or git hook)  
+✅ Zero-setup mode via **Claude Code or Codex CLI** (no API key, no Ollama)  
+✅ **Customizable prompt templates**  
 ✅ Quickly **list recent commit authors** within a sprint window *(default: 15 days) you may need them to query 😄*  
 ✅ Works with **local LLMs (Ollama)** *or* **cloud APIs (OpenAI / Anyscale)**  
 ✅ Fully offline compatible  
@@ -49,6 +52,19 @@ brew tap osmangoninahid/gitgossip
 brew install gitgossip
 
 ```
+
+### 🤖 Using your coding agent as the LLM
+
+Already use **Claude Code** or **Codex CLI**? GitGossip can drive them directly — no API key, no Ollama, no model downloads:
+
+```bash
+gitgossip init
+# → Select LLM provider: agent
+# → GitGossip auto-detects installed CLIs (claude / codex)
+# → Model override: leave blank for the CLI's default
+```
+
+Completions run through your CLI's logged-in account. Slow responses? Raise `llm.timeout` (seconds) in `~/.gitgossip/config.yaml`.
 
 ### 🐳 Optional: Run via Docker (Local LLM mode)
 
@@ -172,14 +188,35 @@ gitgossip list-authors --all-commits
 💡 Tip: Use this command to quickly check active contributors before running
 gitgossip summarize --author "<name or email>"
 
+### 5️⃣ Generate a commit message
+
+```bash
+git add -p
+gitgossip commit            # interactive: accept / edit / regenerate / quit
+gitgossip commit --print    # just print the message
+```
+
+Install as a git hook (fills the message automatically on `git commit`):
+
+```bash
+cat > .git/hooks/prepare-commit-msg <<'EOF'
+#!/bin/sh
+gitgossip commit --hook "$1"
+EOF
+chmod +x .git/hooks/prepare-commit-msg
+```
+
+The hook is fail-open: if the model is unavailable, your commit proceeds untouched.
+
 
 
 ## ☁️ Local vs Cloud Setup
 
-| Mode      | Description                                                      | Base URL                    | API Key  |
-|-----------|------------------------------------------------------------------|-----------------------------|----------|
-| **Local** | Uses [Ollama](https://ollama.ai) or LM Studio for offline models | `http://localhost:11434/v1` | `local`  |
-| **Cloud** | Uses OpenAI / Anyscale / Groq APIs                               | `https://api.openai.com/v1` | Required |
+| Mode      | Description                                                      | Base URL                    | API Key        |
+|-----------|------------------------------------------------------------------|-----------------------------|----------------|
+| **Local** | Uses [Ollama](https://ollama.ai) or LM Studio for offline models | `http://localhost:11434/v1` | `local`        |
+| **Cloud** | Uses OpenAI / Anyscale / Groq APIs                               | `https://api.openai.com/v1` | Required       |
+| **Agent** | Uses your installed Claude Code / Codex CLI                      | n/a                         | Uses CLI login |
 
 Your configuration lives at:
 
@@ -191,36 +228,41 @@ Example:
 
 ```yaml
 llm:
-  provider: local
+  provider: local          # local | cloud | agent
+  agent_cli: ''            # claude | codex (used when provider=agent)
   model: qwen2.5-coder:1.5b
   base_url: http://localhost:11434/v1
   api_key: local
+  timeout: 120             # seconds, agent provider only
 paths:
-  prompts: /Users/osman/.gitgossip/prompts (coming soon)
+  prompts: /Users/osman/.gitgossip/prompts
 meta:
   version: '1.0'
 ```
 
 ---
 
-## 🧩 Optional: Customize Prompts *(Coming Soon)*
+## 🧩 Customize Prompts
 
-GitGossip will soon allow you to customize **LLM prompt templates** for commit summarization, diff synthesis, and merge request generation.
+GitGossip lets you customize the **LLM prompt templates** behind every command. Scaffold editable copies of the defaults:
 
-This feature will let you:
+```bash
+gitgossip prompts init
+```
 
-* Define your own tone (technical, business, casual)
-* Control summary structure (bullet points, prose, etc.)
-* Override system defaults using `.txt` files under:
+This copies the four templates into your prompts directory (`paths.prompts` in the config, default `~/.gitgossip/prompts/`):
 
-  ```
-  ~/.gitgossip/prompts/
-  ├── chunk.txt
-  ├── synthesis.txt
-  └── final.txt
-  ```
+```
+~/.gitgossip/prompts/
+├── chunk.txt       # per-chunk diff summarization
+├── synthesis.txt   # merging chunk summaries
+├── final.txt       # MR title + description
+└── commit.txt      # commit message generation
+```
 
-⚙️ **Status:** Under development — available in an upcoming release (v0.2).
+Edit them freely — user templates always win over the built-in defaults; delete a file to fall back. Available variables: `{{project_name}}`, `{{content}}`, `{{context}}`, `{{metadata}}`.
+
+Use them to define your own tone (technical, business, casual), summary structure (bullets vs prose), or commit-message conventions.
 
 ---
 

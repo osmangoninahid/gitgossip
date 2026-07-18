@@ -27,3 +27,13 @@ class IRepoProvider(ABC):
     def get_diff_between_branches(self, target_branch: str) -> str:
         """Return textual diff between the current HEAD and the target branch."""
         raise NotImplementedError
+
+    @abstractmethod
+    def get_staged_diff(self) -> str:
+        """Return the textual diff of currently staged changes (empty string when nothing is staged)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_staged_files(self) -> list[str]:
+        """Return the paths of currently staged files (empty list when nothing is staged)."""
+        raise NotImplementedError

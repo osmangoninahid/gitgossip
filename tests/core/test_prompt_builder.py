@@ -100,3 +100,17 @@ class TestPromptBuilder:
 
         # then
         assert "git diff" in result.lower() or "summarizing" in result.lower()
+
+    def test_user_dir_override_is_used(self, tmp_path: Path) -> None:
+        """Should prefer templates from an explicitly provided user directory."""
+        # given
+        custom_dir = tmp_path / "myprompts"
+        custom_dir.mkdir()
+        (custom_dir / "chunk.txt").write_text("CUSTOM {{content}}", encoding="utf-8")
+        builder = PromptBuilder(user_dir=custom_dir)
+
+        # when
+        prompt = builder.build("chunk", content="hello")
+
+        # then
+        assert prompt == "CUSTOM hello"
