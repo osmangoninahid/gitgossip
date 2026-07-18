@@ -86,3 +86,54 @@ class TestCommitCmd:
 
         # then
         assert _log_last_subject(staged_repo) == "fix(a): edited message"
+
+
+class TestCommitHookMode:
+    """Verify prepare-commit-msg hook behavior: fill when empty, never break commits."""
+
+    def test_hook_writes_message_into_empty_file(self, staged_repo: Path) -> None:
+        # given
+        msg_file = staged_repo / ".git" / "COMMIT_EDITMSG"
+        msg_file.write_text("\n# Please enter the commit message.\n", encoding="utf-8")
+
+        # when
+        commit_cmd(path=str(staged_repo), print_only=False, hook_file=str(msg_file), use_mock=True)
+
+        # then
+        content = msg_file.read_text(encoding="utf-8")
+        assert content.startswith("chore: mock commit message")
+        assert "# Please enter the commit message." in content
+
+    def test_hook_preserves_existing_message(self, staged_repo: Path) -> None:
+        # given
+        msg_file = staged_repo / ".git" / "COMMIT_EDITMSG"
+        msg_file.write_text("fix: already written by user\n", encoding="utf-8")
+
+        # when
+        commit_cmd(path=str(staged_repo), print_only=False, hook_file=str(msg_file), use_mock=True)
+
+        # then
+        assert msg_file.read_text(encoding="utf-8") == "fix: already written by user\n"
+
+    def test_hook_swallows_errors(self, staged_repo: Path) -> None:
+        # given
+        msg_file = staged_repo / ".git" / "COMMIT_EDITMSG"
+        msg_file.write_text("", encoding="utf-8")
+
+        # when: analyzer factory blows up — hook must not raise
+        with patch("gitgossip.commands.commit.LLMAnalyzerFactory", side_effect=RuntimeError("no config")):
+            commit_cmd(path=str(staged_repo), print_only=False, hook_file=str(msg_file), use_mock=False)
+
+        # then
+        assert msg_file.read_text(encoding="utf-8") == ""
+
+    def test_hook_skips_when_nothing_staged(self, clean_repo: Path) -> None:
+        # given
+        msg_file = clean_repo / ".git" / "COMMIT_EDITMSG"
+        msg_file.write_text("", encoding="utf-8")
+
+        # when
+        commit_cmd(path=str(clean_repo), print_only=False, hook_file=str(msg_file), use_mock=True)
+
+        # then
+        assert msg_file.read_text(encoding="utf-8") == ""
